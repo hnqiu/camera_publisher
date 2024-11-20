@@ -1,0 +1,4 @@
+<launch>
+    <node name="camera_publisher" pkg="camera_publisher" type="camera_publisher.py" output="screen" />
+    <node name="rqt_image_view" pkg="rqt_image_view" type="rqt_image_view" output="screen" />
+</launch>
