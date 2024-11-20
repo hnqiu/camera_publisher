@@ -3,12 +3,20 @@ import rospy
 from sensor_msgs.msg import Image, CameraInfo
 from cv_bridge import CvBridge
 import cv2
+import yaml
+import os
 
-def get_camera_info():
+def load_camera_info(yaml_file):
+    with open(yaml_file, "r") as file:
+        calib_data = yaml.safe_load(file)
     camera_info_msg = CameraInfo()
     camera_info_msg.header.frame_id = "camera_frame"
-    camera_info_msg.width = 1280
-    camera_info_msg.height = 720
+    camera_info_msg.width = calib_data["image_width"]
+    camera_info_msg.height = calib_data["image_height"]
+    camera_info_msg.K = calib_data["camera_matrix"]["data"]
+    camera_info_msg.D = calib_data["distortion_coefficients"]["data"]
+    camera_info_msg.R = calib_data["rectification_matrix"]["data"]
+    camera_info_msg.P = calib_data["projection_matrix"]["data"]
     return camera_info_msg
 
 def publish_camera_image():
@@ -22,6 +30,9 @@ def publish_camera_image():
         rospy.logerr("Cannot open camera")
         return
 
+    cam_file = os.path.join(os.path.dirname(__file__), '..', 'config', 'cam.yaml')
+    camera_info_msg = load_camera_info(cam_file)
+
     rate = rospy.Rate(10)
     while not rospy.is_shutdown():
         ret, frame = cap.read()
@@ -30,7 +41,6 @@ def publish_camera_image():
             break
 
         image_msg = bridge.cv2_to_imgmsg(frame, encoding="bgr8")
-        camera_info_msg = get_camera_info()
         camera_info_msg.header.stamp = rospy.Time.now()
 
         image_pub.publish(image_msg)
